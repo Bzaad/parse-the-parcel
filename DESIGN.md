@@ -74,6 +74,15 @@ Targets .NET 10. Dependencies point inward: the API references Core; Core refere
 
 ## 5. Components (Core)
 
+Files in `src/ParcelShipping.Core` are grouped by role. Every type stays in the single `ParcelShipping.Core` namespace, so callers need one `using`.
+
+| Folder | Contents |
+|---|---|
+| `Models/` | `Parcel`, `PackageDefinition`, `PackagingResult`, `PackageType` |
+| `Abstractions/` | `IPackageCatalogue` |
+| `Catalogue/` | `InCodePackageCatalogue` |
+| `Services/` | `PackageSelector` |
+
 | Type | Responsibility |
 |---|---|
 | `Parcel` | Immutable record of length, breadth, height (mm) and weight (kg). The constructor rejects any value ≤ 0 with `ArgumentOutOfRangeException` naming the argument, so an invalid parcel cannot exist. |

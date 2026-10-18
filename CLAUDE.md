@@ -4,11 +4,15 @@ The 'Parse the Parcel' exercise: a component that takes a parcel's dimensions an
 
 ## Layout
 
-- `src/ParcelShipping.Core` — domain logic. No knowledge of HTTP or any caller.
+- `src/ParcelShipping.Core` — domain logic. No knowledge of HTTP or any caller. Organised into folders:
+  - `Models/` — `Parcel`, `PackageDefinition`, `PackagingResult`, `PackageType`
+  - `Abstractions/` — `IPackageCatalogue`
+  - `Catalogue/` — `InCodePackageCatalogue`
+  - `Services/` — `PackageSelector`
 - `src/ParcelShipping.Api` — thin Web API: one POST endpoint, DTOs, maps results to 200 / 422 / 400.
 - `tests/ParcelShipping.Tests` — xUnit tests.
 
-Targets .NET 10.
+Targets .NET 10. All Core types share the `ParcelShipping.Core` namespace; the folders are for organisation only.
 
 ## Commands
 
