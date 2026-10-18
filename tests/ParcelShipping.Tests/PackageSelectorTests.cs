@@ -4,7 +4,7 @@ namespace ParcelShipping.Tests;
 
 public class PackageSelectorTests
 {
-    private readonly PackageSelector _selector = new();
+    private readonly PackageSelector _selector = new(new InCodePackageCatalogue());
 
     public static TheoryData<decimal, decimal, decimal, PackageType, decimal> ParcelsThatFit => new()
     {

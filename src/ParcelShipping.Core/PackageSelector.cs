@@ -6,10 +6,6 @@ public sealed class PackageSelector
 
     private readonly IPackageCatalogue _catalogue;
 
-    public PackageSelector() : this(new InCodePackageCatalogue())
-    {
-    }
-
     public PackageSelector(IPackageCatalogue catalogue)
     {
         _catalogue = catalogue;
