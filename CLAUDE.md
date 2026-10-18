@@ -5,7 +5,7 @@ The 'Parse the Parcel' exercise: a component that takes a parcel's dimensions an
 ## Layout
 
 - `src/ParcelShipping.Core` — domain logic. No knowledge of HTTP or any caller.
-- `src/ParcelShipping.Api` — thin Web API (planned): one POST endpoint, DTOs, maps results to 200 / 422 / 400.
+- `src/ParcelShipping.Api` — thin Web API: one POST endpoint, DTOs, maps results to 200 / 422 / 400.
 - `tests/ParcelShipping.Tests` — xUnit tests.
 
 Targets .NET 10.
@@ -14,7 +14,8 @@ Targets .NET 10.
 
 - Build: `dotnet build`
 - Test: `dotnet test`
-- Run the API (once it exists): `dotnet run --project src/ParcelShipping.Api`
+- Run the API: `dotnet run --project src/ParcelShipping.Api` (listens on `http://localhost:5080`)
+- Try it: send the requests in `src/ParcelShipping.Api/ParcelShipping.Api.http`
 
 ## Conventions
 
@@ -30,7 +31,8 @@ Targets .NET 10.
 
 - Add or update tests with every behaviour change.
 - Cover each box type, oversized, overweight, exact boundaries (and 1mm over), exactly 25kg, rotation and invalid input.
-- API tests cover all three outcomes: 200, 422 (overweight and oversized) and 400 (zero and negative values).
+- API tests cover all three outcomes: 200, 422 (overweight and oversized) and 400 (zero and negative values), both by calling the controller directly and over HTTP with `WebApplicationFactory`.
+- When the API changes, keep the `.http` file in step with it.
 
 ## Working rules
 

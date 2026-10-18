@@ -64,13 +64,13 @@ Pricing by weight, multi-parcel orders, packing several items into one box, cour
 │  PackagingResult         │
 └──────────────────────────┘
 ┌──────────────────────────┐
-│  ParcelShipping.Tests    │  Unit tests against Core
+│  ParcelShipping.Tests    │  xUnit tests: Core units, controller, HTTP endpoint
 └──────────────────────────┘
 ```
 
 Targets .NET 10. Dependencies point inward: the API references Core; Core references nothing. Request/response DTOs live in the API layer only.
 
-**Status:** Core and Tests exist. `ParcelShipping.Api` is **not yet implemented**; it is the entry point the brief asks for ("something we could actually run").
+**Status:** Core, Api and Tests are implemented. `ParcelShipping.Api` is the entry point the brief asks for ("something we could actually run"). `src/ParcelShipping.Api/ParcelShipping.Api.http` has sample requests for every outcome, and `launchSettings.json` fixes the URL at `http://localhost:5080`.
 
 ## 5. Components (Core)
 
@@ -106,7 +106,7 @@ A volume comparison was rejected: a 300 × 300 × 300mm parcel has less volume t
 | Decision | Choice | Alternatives and trade-off |
 |---|---|---|
 | "No solution" | `null` `PackagingResult?` | A `NotFound` enum value would allow nonsense states such as "NotFound, $5.00"; a `TryX` method is clumsy from a controller. Cost of `null`: callers must check, mitigated by nullable reference types and mapping to a clear API response. |
-| Invalid input | Throws in `Parcel` constructor | Returning "no solution" would hide caller bugs. The API layer will translate to a 400 response. |
+| Invalid input | Throws in `Parcel` constructor | Returning "no solution" would hide caller bugs. The API layer translates it to a 400 response. |
 | Box data | Behind `IPackageCatalogue` | Prices and sizes can change without touching selection logic. Moving to `appsettings.json` or a database changes one class. No configuration infrastructure is built now. |
 | Money and dimensions | `decimal` | Avoids floating-point error at boundaries (e.g. 200.0 vs 199.99999) and in prices. |
 | Cheapest box by cost, not by order | `OrderBy(Cost)` in selector | Does not depend on catalogue ordering; covered by a test. |
@@ -125,17 +125,19 @@ Open point: `Select` does not null-check the `parcel` argument or the catalogue 
 
 ## 8. Testing
 
-Existing (xUnit, in `ParcelShipping.Tests`):
+Implemented (xUnit, in `ParcelShipping.Tests`):
 
 - `ParcelTests`: values stored correctly; zero/negative on each of the four fields throws naming the argument; tiny positive values accepted.
-- `PackageSelectorTests`: each box chosen for a fitting parcel; oversized in every box returns null; exactly 25kg accepted; just over 25kg returns null; catalogue not sorted by cost still gives the cheapest fit; weight below the limit does not change the box.
+- `PackageSelectorTests`: each box chosen for a fitting parcel, including exact boundaries, 1mm over and rotated variants; oversized in every box returns null; exactly 25kg accepted; just over 25kg returns null; catalogue not sorted by cost still gives the cheapest fit; weight below the limit does not change the box.
+- `Api/PackagesControllerTests`: calls the controller directly for all three outcomes (200, 422 for oversized and overweight, 400 naming the field for zero and negative values).
+- `Api/QuoteEndpointTests`: `WebApplicationFactory` tests over HTTP for 200, 422, 400 for zero and negative values, and 400 for non-numeric and missing fields.
 
 Planned:
 
-- Boundary cases at each box's exact dimensions and 1mm over (and rotated variants).
 - The 300 × 300 × 300 counterexample, which pins the sorted-sides logic.
 - `PackageDefinition.Fits` direct tests.
-- API tests for each of the three outcomes (200, 422 for overweight and oversized, 400 for zero and negative values). Controller unit tests calling the controller directly, and optionally one `WebApplicationFactory` test to prove wiring. Broader integration tests are out of scope.
+
+Broader integration tests are out of scope.
 
 ## 9. API: `ParcelShipping.Api`
 
@@ -153,16 +155,18 @@ Responses:
 
 | Status | When | Body |
 |---|---|---|
-| 200 | A box fits | `{ "packageType": "Medium", "cost": 7.50 }` |
+| 200 | A box fits | `{ "packageType": 1, "cost": 7.50 }` |
 | 422 | Valid parcel, overweight or oversized | `{ "message": "..." }` |
 | 400 | Zero or negative value (or missing/non-numeric field) | Error naming the offending field |
+
+`packageType` is serialised as the enum's number (`0` Small, `1` Medium, `2` Large).
 
 Flow: bind the request DTO → build a `Parcel` (invalid values throw, caught and returned as 400) → `PackageSelector.Select` → `null` becomes 422, otherwise 200.
 
 Notes:
 - `PackageSelector` and `InCodePackageCatalogue` are registered in dependency injection.
 - **[Assumption]** Overweight and oversized share one 422 message, because Core returns `null` for both and does not say which. If the caller needs to know the reason, `PackagingResult` or a new outcome type in Core would have to carry it.
-- **[Assumption]** The 400 body uses the standard ASP.NET problem details format.
+- **[Assumption]** The 400 body uses the ASP.NET validation problem details shape (`title`, `status`, `errors`). For zero or negative values the controller builds it itself and the error text is the .NET exception message, which is untidy (it includes the parameter name and actual value on a second line). Tidying that text is an open item.
 - DTOs live in the API project only; Core stays unaware of HTTP.
 
 ## 10. Risks and Open Questions
@@ -172,6 +176,8 @@ Notes:
 3. Should there be a minimum size or weight?
 4. Is a heavier parcel ever priced differently within the same box?
 5. Should the 422 message say whether the parcel is overweight or oversized? (Currently one shared message.)
+6. Should `packageType` be returned as a name (`"Medium"`) rather than a number?
+7. Should the 400 error text be a plain message instead of the exception text?
 
 ## 11. Future Extensions
 
@@ -183,6 +189,7 @@ Notes:
 ## 12. Delivery Plan
 
 1. Core library and unit tests — **done**.
-2. Create `src/ParcelShipping.Api` with its single POST endpoint, DTOs, and the 200 / 422 / 400 mapping — **next**.
-3. API tests and README run instructions.
-4. Pull request.
+2. `src/ParcelShipping.Api` with its single POST endpoint, DTOs, and the 200 / 422 / 400 mapping — **done**.
+3. API tests (controller and HTTP) and an `.http` file of sample requests — **done**; all 56 tests pass and the `.http` requests were run against the live API.
+4. README run instructions — **next**.
+5. Pull request.
